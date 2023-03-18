@@ -1,15 +1,22 @@
 #!/bin/bash
 
 modifyJSON() {
-    BRANCH=$1
-    OVNER=$2
-    curl "https://raw.githubusercontent.com/EPAM-JS-Competency-center/devops-fundamentals-course/main/lab_1/pipeline.json" |
+    PIPELINE_PATH=$1
+    BRANCH=$2
+    OVNER=$3
+    POLL_FOR_SOURCE_CHANGES=$4
+    REPO=$5
+    cat "$PIPELINE_PATH" |
         jq "del(.metadata) 
         | .pipeline.version=.pipeline.version+1 
         | (.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration.Branch) 
         |= \"$BRANCH\" 
         | (.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration.Owner) 
-        |= \"$OVNER\""
+        |= \"$OVNER\"
+        | (.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration.PollForSourceChanges) 
+        |= \"$POLL_FOR_SOURCE_CHANGES\"
+        | (.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration.Repo) 
+        |= \"$REPO\""
 
 }
 
@@ -18,6 +25,8 @@ help() {
 }
 
 main() {
+    PIPELINE_PATH=$1
+    shift
     while true; do
         case "$1" in
         -b | --branch)
@@ -28,16 +37,19 @@ main() {
             OVNER="$2"
             shift 2
             ;;
+        --poll-for-source-changes)
+            POLL_FOR_SOURCE_CHANGES="$2"
+            shift 2
+            ;;
+        --repo)
+            REPO="$2"
+            shift 2
+            ;;
         *) break ;;
         esac
     done
 
-    modifyJSON $BRANCH $OVNER
+    modifyJSON "$PIPELINE_PATH" $BRANCH $OVNER $POLL_FOR_SOURCE_CHANGES $REPO
 }
 
 main $@
-
-# .pipeline.stages | map(select(.name=="Source") | .actions | map(select(.name=="Source") | .configuration |.Branch="new branch" | .Owner="new Owner" ))
-# .pipeline.stages | map(select(.name=="Source") | .actions | map(select(.name=="Source") | .configuration | .Branch |= "new branch" | .Owner |= "new Owner" ))
-
-# (.pipeline.stages[] | select(.name=="Source") | .actions[] | select(.name=="Source") | .configuration.Branch) |= "new branch"
