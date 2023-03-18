@@ -24,7 +24,23 @@ help() {
     echo "HELP"
 }
 
+checkIfJQExist() {
+    if ! command -v jq &>/dev/null; then
+        echo "jq could not be found"
+        ehco "To install execute"
+        echo " git clone https://github.com/stedolan/jq.git"
+        echo " cd jq"
+        echo " autoreconf -i"
+        echo " ./configure --disable-maintainer-mode"
+        echo " make"
+        echo " sudo make install"
+        exit 1
+    fi
+}
+
 main() {
+    checkIfJQExist
+
     PIPELINE_PATH=$1
     shift
     while true; do
