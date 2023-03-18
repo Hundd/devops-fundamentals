@@ -11,7 +11,7 @@ cloneRepo() {
 }
 
 installDeps() {
-    if [ ! -d $PROJECT_FOLDER ]; then
+    if [ ! -d $PROJECT_FOLDER/$PROJECT_NAME ]; then
         cloneRepo
     fi
     echo "Installing dependencies..."
