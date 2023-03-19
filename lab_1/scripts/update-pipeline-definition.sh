@@ -3,24 +3,35 @@
 modifyJSON() {
     options=$1
 
-    getConfiguration="(.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration"
+    getConfiguration=".pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration"
     getEnv="(.pipeline.stages[].actions[].configuration | select(.EnvironmentVariables).EnvironmentVariables)"
-    JSON=$(cat ${options[PIPELINE_PATH]} | jq "del(.metadata) | .pipeline.version=.pipeline.version+1 ")
+    JSON=$(cat ${options[PIPELINE_PATH]})
 
+    # Validate JSON
+    if ! jq "${getConfiguration}" ${options[PIPELINE_PATH]} &>/dev/null; then
+        echo "Invalid configuarion in pipeline ${options[PIPELINE_PATH]}"
+        exit 1
+    fi
+    if ! jq "${getEnv}" ${options[PIPELINE_PATH]} &>/dev/null; then
+        echo "Invalid environment in pipeline ${options[PIPELINE_PATH]}"
+        exit 1
+    fi
+    # Append and remove date
+    JSON=$(jq "del(.metadata) | .pipeline.version=.pipeline.version+1" <<<$JSON)
     if [ ! -z ${options[BRANCH]} ]; then
-        JSON=$(jq "${getConfiguration}.Branch) |= \"${options[BRANCH]}\" " <<<$JSON)
+        JSON=$(jq "(${getConfiguration}.Branch) |= \"${options[BRANCH]}\" " <<<$JSON)
     fi
 
     if [ ! -z ${options[OVNER]} ]; then
-        JSON=$(jq "${getConfiguration}.Owner) |= \"${options[OVNER]}\"" <<<$JSON)
+        JSON=$(jq "(${getConfiguration}.Owner) |= \"${options[OVNER]}\"" <<<$JSON)
     fi
 
     if [ ! -z ${options[POLL_FOR_SOURCE_CHANGES]} ]; then
-        JSON=$(jq "${getConfiguration}.PollForSourceChanges) |= \"${options[POLL_FOR_SOURCE_CHANGES]}\"" <<<$JSON)
+        JSON=$(jq "(${getConfiguration}.PollForSourceChanges) |= \"${options[POLL_FOR_SOURCE_CHANGES]}\"" <<<$JSON)
     fi
 
     if [ ! -z ${options[REPO]} ]; then
-        JSON=$(jq "${getConfiguration}.Repo) |= \"${options[REPO]}\"" <<<$JSON)
+        JSON=$(jq "(${getConfiguration}.Repo) |= \"${options[REPO]}\"" <<<$JSON)
     fi
 
     if [ ! -z ${options[CONFIGURATION]} ]; then
