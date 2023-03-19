@@ -4,6 +4,7 @@ modifyJSON() {
     options=$1
 
     getConfiguration="(.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration"
+    getEnv="(.pipeline.stages[].actions[].configuration | select(.EnvironmentVariables).EnvironmentVariables)"
     JSON=$(cat ${options[PIPELINE_PATH]} | jq "del(.metadata) | .pipeline.version=.pipeline.version+1 ")
 
     if [ ! -z ${options[BRANCH]} ]; then
@@ -20,6 +21,10 @@ modifyJSON() {
 
     if [ ! -z ${options[REPO]} ]; then
         JSON=$(jq "${getConfiguration}.Repo) |= \"${options[REPO]}\"" <<<$JSON)
+    fi
+
+    if [ ! -z ${options[CONFIGURATION]} ]; then
+        JSON=$(jq "$getEnv|= sub(\"{{BUILD_CONFIGURATION value}}\"; \"${options[CONFIGURATION]}\")" <<<$JSON)
     fi
 
     echo "$JSON"
@@ -64,6 +69,10 @@ main() {
             ;;
         --repo)
             options[REPO]="$2"
+            shift 2
+            ;;
+        --configuration)
+            options[CONFIGURATION]="$2"
             shift 2
             ;;
         *) break ;;
