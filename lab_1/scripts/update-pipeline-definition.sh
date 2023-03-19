@@ -1,29 +1,25 @@
 #!/bin/bash
 
 modifyJSON() {
-    PIPELINE_PATH=$1
-    BRANCH=$2
-    OVNER=$3
-    POLL_FOR_SOURCE_CHANGES=$4
-    REPO=$5
+    options=$1
 
     getConfiguration="(.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration"
-    JSON=$(cat "$PIPELINE_PATH" | jq "del(.metadata) | .pipeline.version=.pipeline.version+1 ")
+    JSON=$(cat ${options[PIPELINE_PATH]} | jq "del(.metadata) | .pipeline.version=.pipeline.version+1 ")
 
-    if [ ! -z $BRANCH ]; then
-        JSON=$(jq "${getConfiguration}.Branch) |= \"$BRANCH\" " <<<$JSON)
+    if [ ! -z ${options[BRANCH]} ]; then
+        JSON=$(jq "${getConfiguration}.Branch) |= \"${options[BRANCH]}\" " <<<$JSON)
     fi
 
-    if [ ! -z $OVNER ]; then
-        JSON=$(jq "${getConfiguration}.Owner) |= \"$OVNER\"" <<<$JSON)
+    if [ ! -z ${options[OVNER]} ]; then
+        JSON=$(jq "${getConfiguration}.Owner) |= \"${options[OVNER]}\"" <<<$JSON)
     fi
 
-    if [ ! -z $POLL_FOR_SOURCE_CHANGES ]; then
-        JSON=$(jq "${getConfiguration}.PollForSourceChanges) |= \"$POLL_FOR_SOURCE_CHANGES\"" <<<$JSON)
+    if [ ! -z ${options[POLL_FOR_SOURCE_CHANGES]} ]; then
+        JSON=$(jq "${getConfiguration}.PollForSourceChanges) |= \"${options[POLL_FOR_SOURCE_CHANGES]}\"" <<<$JSON)
     fi
 
-    if [ ! -z $REPO ]; then
-        JSON=$(jq "${getConfiguration}.Repo) |= \"$REPO\"" <<<$JSON)
+    if [ ! -z ${options[REPO]} ]; then
+        JSON=$(jq "${getConfiguration}.Repo) |= \"${options[REPO]}\"" <<<$JSON)
     fi
 
     echo "$JSON"
@@ -49,32 +45,32 @@ checkIfJQExist() {
 
 main() {
     checkIfJQExist
-
-    PIPELINE_PATH=$1
+    declare -A options
+    options[PIPELINE_PATH]=$1
     shift
     while true; do
         case "$1" in
         -b | --branch)
-            BRANCH="$2"
+            options[BRANCH]="$2"
             shift 2
             ;;
         -b | --ovner)
-            OVNER="$2"
+            options[OVNER]="$2"
             shift 2
             ;;
         --poll-for-source-changes)
-            POLL_FOR_SOURCE_CHANGES="$2"
+            options[POLL_FOR_SOURCE_CHANGES]="$2"
             shift 2
             ;;
         --repo)
-            REPO="$2"
+            options[REPO]="$2"
             shift 2
             ;;
         *) break ;;
         esac
     done
 
-    modifyJSON "$PIPELINE_PATH" $BRANCH $OVNER $POLL_FOR_SOURCE_CHANGES $REPO
+    modifyJSON $options
 }
 
 main $@
