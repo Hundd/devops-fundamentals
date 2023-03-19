@@ -6,18 +6,27 @@ modifyJSON() {
     OVNER=$3
     POLL_FOR_SOURCE_CHANGES=$4
     REPO=$5
-    cat "$PIPELINE_PATH" |
-        jq "del(.metadata) 
-        | .pipeline.version=.pipeline.version+1 
-        | (.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration.Branch) 
-        |= \"$BRANCH\" 
-        | (.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration.Owner) 
-        |= \"$OVNER\"
-        | (.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration.PollForSourceChanges) 
-        |= \"$POLL_FOR_SOURCE_CHANGES\"
-        | (.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration.Repo) 
-        |= \"$REPO\""
 
+    getConfiguration="(.pipeline.stages[] | select(.name==\"Source\") | .actions[] | select(.name==\"Source\") | .configuration"
+    JSON=$(cat "$PIPELINE_PATH" | jq "del(.metadata) | .pipeline.version=.pipeline.version+1 ")
+
+    if [ ! -z $BRANCH ]; then
+        JSON=$(jq "${getConfiguration}.Branch) |= \"$BRANCH\" " <<<$JSON)
+    fi
+
+    if [ ! -z $OVNER ]; then
+        JSON=$(jq "${getConfiguration}.Owner) |= \"$OVNER\"" <<<$JSON)
+    fi
+
+    if [ ! -z $POLL_FOR_SOURCE_CHANGES ]; then
+        JSON=$(jq "${getConfiguration}.PollForSourceChanges) |= \"$POLL_FOR_SOURCE_CHANGES\"" <<<$JSON)
+    fi
+
+    if [ ! -z $REPO ]; then
+        JSON=$(jq "${getConfiguration}.Repo) |= \"$REPO\"" <<<$JSON)
+    fi
+
+    echo "$JSON"
 }
 
 help() {
